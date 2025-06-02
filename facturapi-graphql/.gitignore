@@ -1,0 +1,13 @@
+# Claves y configuraciones sensibles
+auth/
+.env
+
+# Dependencias
+node_modules/
+
+# Logs
+*.log
+
+# Salida de producción
+dist/
+build/
