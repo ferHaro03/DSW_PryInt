@@ -3,6 +3,7 @@ const { generarResumen } = require('./services/vertexService');
 const Factura = require("./models/Factura");
 require('dotenv').config();
 const { generarFacturaPDF } = require('./services/pdfService');
+const { enviarFacturaPorCorreo } = require('./services/sendgridService');
 
 module.exports = {
   Query: {
@@ -10,42 +11,42 @@ module.exports = {
   },
 
   Mutation: {
- emitirFactura: async (_, { input }) => {
-  const facturaData = {
-    payment_form: "08",
-    use: "S01",
-    customer: {
-      legal_name: input.customer.legal_name,
-      tax_id: input.customer.tax_id,
-      tax_system: "616",
-      email: input.customer.email,
-      address: { zip: "83240" }
-    },
-    items: input.items.map(item => ({
-      quantity: item.quantity,
-      product: {
-        description: item.description,
-        product_key: "01010101",
-        price: item.price,
-        taxes: [{ type: "IVA", rate: 0.16 }]
-      }
-    })),
-    
-  };
+    emitirFactura: async (_, { input }) => {
+      const facturaData = {
+        payment_form: "08",
+        use: "S01",
+        customer: {
+          legal_name: input.customer.legal_name,
+          tax_id: input.customer.tax_id,
+          tax_system: "616",
+          email: input.customer.email,
+          address: { zip: "83240" }
+        },
+        items: input.items.map(item => ({
+          quantity: item.quantity,
+          product: {
+            description: item.description,
+            product_key: "01010101",
+            price: item.price,
+            taxes: [{ type: "IVA", rate: 0.16 }]
+          }
+        })),
+
+      };
 
       const resumen = await generarResumen(input.customer, input.items);
       const total = input.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
       try {
         const { data } = await axios.post(
-        "https://www.facturapi.io/v2/invoices",
-        facturaData,
-        {
+          "https://www.facturapi.io/v2/invoices",
+          facturaData,
+          {
             headers: {
-            Authorization: `Bearer ${process.env.FACTURAPI_KEY}`,
-            "Content-Type": "application/json"
+              Authorization: `Bearer ${process.env.FACTURAPI_KEY}`,
+              "Content-Type": "application/json"
             }
-        }
+          }
         );
         let guardado = false;
         let pdfPath = null; // 👈 Declarado fuera del try
@@ -58,8 +59,10 @@ module.exports = {
             resumen,
             status: data.status
           });
+
           guardado = true;
-           pdfPath = generarFacturaPDF({
+
+          pdfPath = await generarFacturaPDF({
             cliente: input.customer,
             productos: input.items,
             total,
@@ -67,9 +70,24 @@ module.exports = {
             fecha: new Date().toISOString(),
             folio: data.folio_number,
             status: data.status
-            }, data.id);
+          }, data.id);
+
+
+          console.log("PDF generado:", pdfPath);
+          console.log("Preparando para enviar correo...");
+
+          // Enviar correo
+          await enviarFacturaPorCorreo({
+            to: input.customer.email,
+            subject: 'Gracias por tu compra – Tu factura electrónica',
+            text: resumen,
+            pdfPath
+          });
+
+          console.log("Correo enviado (desde mutación)");
+
         } catch (error) {
-          console.error("❌ Error al guardar en MongoDB:", error.message);
+          console.error("Error al guardar en MongoDB:", error.message);
         }
 
         return {
@@ -77,7 +95,7 @@ module.exports = {
           cliente: input.customer,
           productos: input.items,
           total,
-          pdf_local: `http://localhost:3333/facturas/${data.id}.pdf`, 
+          pdf_local: `http://localhost:3333/facturas/${data.id}.pdf`,
           resumen,
           status: data.status,
           fecha: new Date().toISOString(),
