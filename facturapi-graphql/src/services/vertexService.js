@@ -29,7 +29,7 @@ async function generarResumen(cliente, items) {
   // Crea una descripción breve de los productos
   const productos = items.map(i => `${i.quantity} x ${i.description} ($${i.price})`).join(', ');
   // Prompt (instrucción) para el modelo de IA
-  const prompt = `Redacta un mensaje amable de confirmación de compra para ${cliente.legal_name}. Los productos adquiridos son: ${productos}.`;
+  const prompt = `Redacta un mensaje amable de confirmación de compra de la tienda llamada CyberDoor para ${cliente.legal_name}. Los productos adquiridos son: ${productos}.`;
 
   try {
     // Llama al modelo Gemini 2.0 Flash para generar contenido
