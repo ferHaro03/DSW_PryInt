@@ -27,7 +27,7 @@ Este proyecto consiste en el diseño, desarrollo y despliegue de una API basada 
   - OpenAI
   - SendGrid (email)
   - Twilio (SMS y WhatsApp)
-- **Generación de PDF:** pdfkit, puppeteer o html-pdf
+- **Generación de PDF:** pdfkit
 - **Despliegue:** Railway / Render / Heroku / Vercel
 - **Control de Versiones:** Git + GitHub
 
