@@ -32,8 +32,7 @@ module.exports = {
           cliente: null
         };
       }
-
-        // ✅ Validar stock antes de emitir la factura
+          // ✅ Validar stock antes de emitir la factura
       for (const item of input.items) {
         const producto = await Producto.findOne({ description: item.description });
 
@@ -109,7 +108,7 @@ module.exports = {
 
           guardado = true;
 
-           // ✅ Descontar stock de productos
+                // ✅ Descontar stock de productos
           for (const item of input.items) {
             await Producto.updateOne(
               { description: item.description },
@@ -127,39 +126,40 @@ module.exports = {
             status: data.status
           }, data.id);
 
+          
+
           //  SMS y WhatsApp 
           try {
-            if (input.customer.phone) {
+            if (clienteDb.phone) {
               await sendSMS(
-                input.customer.phone,
-                `Hola ${input.customer.legal_name}, gracias por tu compra. Tu factura fue enviada al correo. Total: $${total}`
+                clienteDb.phone,
+                `Hola ${clienteDb.legal_name}, gracias por tu compra. Tu factura fue enviada al correo. Total: $${total}`
               );
-              console.log(" SMS enviado correctamente");
+              console.log("✅ SMS enviado correctamente");
             }
           } catch (error) {
-            console.error(" Error enviando SMS:", error.message);
+            console.error("❌ Error enviando SMS:", error.message);
           }
 
           try {
-            if (input.customer.whatsapp) {
+            if (clienteDb.whatsapp) {
               await sendWhatsApp(
-                input.customer.whatsapp,
-                `Hola ${input.customer.legal_name}, gracias por tu compra. Tu factura fue enviada al correo. Total: $${total}`
+                clienteDb.whatsapp,
+                `Hola ${clienteDb.legal_name}, gracias por tu compra. Tu factura fue enviada al correo. Total: $${total}`
               );
-              console.log(" WhatsApp enviado correctamente");
+              console.log("✅ WhatsApp enviado correctamente");
             }
           } catch (error) {
-            console.error(" Error enviando WhatsApp:", error.message);
+            console.error("❌ Error enviando WhatsApp:", error.message);
           }
 
-
           // Correo con PDF
-          await enviarFacturaPorCorreo({
-            to: input.customer.email,
-            subject: 'Gracias por tu compra – Tu factura electrónica',
-            text: resumen,
-            pdfPath
-          });
+        await enviarFacturaPorCorreo({
+          to: clienteDb.email,
+          subject: 'Gracias por tu compra – Tu factura electrónica',
+          text: resumen,
+          pdfPath
+        });
 
         } catch (error) {
           console.error("Error al guardar en MongoDB o enviar notificaciones:", error.message);
@@ -177,7 +177,10 @@ module.exports = {
           mensaje: guardado
             ? "Factura y notificaciones enviadas correctamente."
             : "Factura emitida pero no guardada en base de datos."
+          
         };
+
+        
 
       } catch (error) {
         console.error(" Error al emitir factura en FacturAPI:", error.response?.data || error.message);
@@ -231,6 +234,7 @@ module.exports = {
         tax_system: facturapiData.tax_system,
         email: facturapiData.email,
         phone: facturapiData.phone,
+        whatsapp: input.whatsapp,
         address: facturapiData.address
       });
 
@@ -288,7 +292,7 @@ module.exports = {
         return [];
       }
     },
-    getAllFacturas: async () => {
+      getAllFacturas: async () => {
     try {
       const facturas = await Factura.find()
         .populate('cliente')
