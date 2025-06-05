@@ -33,6 +33,19 @@ module.exports = {
         };
       }
 
+        // ✅ Validar stock antes de emitir la factura
+      for (const item of input.items) {
+        const producto = await Producto.findOne({ description: item.description });
+
+        if (!producto || producto.quantity < item.quantity) {
+          return {
+            success: false,
+            mensaje: `Stock insuficiente para "${item.description}"`,
+            cliente: null
+          };
+        }
+      }
+
       const facturaData = {
             payment_form: "08",
       use: "S01",
@@ -95,6 +108,14 @@ module.exports = {
           });
 
           guardado = true;
+
+           // ✅ Descontar stock de productos
+          for (const item of input.items) {
+            await Producto.updateOne(
+              { description: item.description },
+              { $inc: { quantity: -item.quantity } }
+            );
+          }
 
           pdfPath = await generarFacturaPDF({
             cliente:  clienteDb,
