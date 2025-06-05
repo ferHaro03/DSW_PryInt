@@ -7,6 +7,7 @@ const ClienteSchema = new mongoose.Schema({
   tax_system: String,
   email: String,
   phone: String,
+  whatsapp: String,
   address: {
     zip: String,
     street: String,
