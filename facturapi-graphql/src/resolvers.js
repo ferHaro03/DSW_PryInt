@@ -74,7 +74,7 @@ module.exports = {
             status: data.status
           }, data.id);
 
-          // ✅ SMS y WhatsApp si se proporcionan
+          //  SMS y WhatsApp 
           try {
             if (input.customer.phone) {
               await sendSMS(
@@ -91,7 +91,7 @@ module.exports = {
             if (input.customer.whatsapp) {
               await sendWhatsApp(
                 input.customer.whatsapp,
-                `Hola ${input.customer.legal_name}, aquí tienes el resumen de tu compra:\n\n${resumen}`
+                `Hola ${input.customer.legal_name}, gracias por tu compra. Tu factura fue enviada al correo. Total: $${total}`
               );
               console.log(" WhatsApp enviado correctamente");
             }
@@ -100,7 +100,7 @@ module.exports = {
           }
 
 
-          // ✅ Correo con PDF
+          // Correo con PDF
           await enviarFacturaPorCorreo({
             to: input.customer.email,
             subject: 'Gracias por tu compra – Tu factura electrónica',
