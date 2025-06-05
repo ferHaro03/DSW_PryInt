@@ -4,6 +4,7 @@ const Factura = require("./models/Factura");
 require('dotenv').config();
 const { generarFacturaPDF } = require('./services/pdfService');
 const { enviarFacturaPorCorreo } = require('./services/sendgridService');
+const { sendSMS, sendWhatsApp } = require('./services/notificationsService');
 
 module.exports = {
   Query: {
@@ -31,7 +32,6 @@ module.exports = {
             taxes: [{ type: "IVA", rate: 0.16 }]
           }
         })),
-
       };
 
       const resumen = await generarResumen(input.customer, input.items);
@@ -48,8 +48,10 @@ module.exports = {
             }
           }
         );
+
         let guardado = false;
-        let pdfPath = null; // 👈 Declarado fuera del try
+        let pdfPath = null;
+
         try {
           await Factura.create({
             cliente: input.customer,
@@ -72,11 +74,33 @@ module.exports = {
             status: data.status
           }, data.id);
 
+          // ✅ SMS y WhatsApp si se proporcionan
+          try {
+            if (input.customer.phone) {
+              await sendSMS(
+                input.customer.phone,
+                `Hola ${input.customer.legal_name}, gracias por tu compra. Tu factura fue enviada al correo. Total: $${total}`
+              );
+              console.log(" SMS enviado correctamente");
+            }
+          } catch (error) {
+            console.error(" Error enviando SMS:", error.message);
+          }
 
-          console.log("PDF generado:", pdfPath);
-          console.log("Preparando para enviar correo...");
+          try {
+            if (input.customer.whatsapp) {
+              await sendWhatsApp(
+                input.customer.whatsapp,
+                `Hola ${input.customer.legal_name}, aquí tienes el resumen de tu compra:\n\n${resumen}`
+              );
+              console.log(" WhatsApp enviado correctamente");
+            }
+          } catch (error) {
+            console.error(" Error enviando WhatsApp:", error.message);
+          }
 
-          // Enviar correo
+
+          // ✅ Correo con PDF
           await enviarFacturaPorCorreo({
             to: input.customer.email,
             subject: 'Gracias por tu compra – Tu factura electrónica',
@@ -84,10 +108,8 @@ module.exports = {
             pdfPath
           });
 
-          console.log("Correo enviado (desde mutación)");
-
         } catch (error) {
-          console.error("Error al guardar en MongoDB:", error.message);
+          console.error("Error al guardar en MongoDB o enviar notificaciones:", error.message);
         }
 
         return {
@@ -100,12 +122,12 @@ module.exports = {
           status: data.status,
           fecha: new Date().toISOString(),
           mensaje: guardado
-            ? "Factura guardada correctamente en la base de datos."
-            : "Factura emitida pero NO se guardó en MongoDB."
+            ? "Factura y notificaciones enviadas correctamente."
+            : "Factura emitida pero no guardada en base de datos."
         };
 
       } catch (error) {
-        console.error("❌ Error al emitir factura en FacturAPI:", error.response?.data || error.message);
+        console.error(" Error al emitir factura en FacturAPI:", error.response?.data || error.message);
         return {
           id: "simulada_factura_001",
           cliente: input.customer,
@@ -115,7 +137,7 @@ module.exports = {
           resumen,
           status: "simulada",
           fecha: new Date().toISOString(),
-          mensaje: "Sandbox no disponible. Se devolvió una factura simulada y NO se guardó en MongoDB."
+          mensaje: "Factura simulada. No se guardó ni notificó."
         };
       }
     }

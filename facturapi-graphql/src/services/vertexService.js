@@ -23,10 +23,10 @@ async function generarResumen(cliente, items) {
     });
 
     const texto = response.candidates[0].content.parts[0].text;
-    console.log("🟢 Resumen generado desde Gemini:\n", texto);
+    console.log("Resumen generado desde Gemini:\n", texto);
     return texto;
     } catch (error) {
-    console.error("❌ Error generando resumen:", error.message);
+    console.error(" Error generando resumen:", error.message);
     return "[FALLBACK] Gracias por tu compra. Pronto recibirás tu factura.";
     }
 }

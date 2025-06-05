@@ -5,6 +5,8 @@ module.exports = gql`
     legal_name: String
     tax_id: String
     email: String
+    phone: String        # ✅ nuevo
+    whatsapp: String     # ✅ nuevo
   }
 
   type Producto {
@@ -41,6 +43,8 @@ module.exports = gql`
     legal_name: String!
     tax_id: String!
     email: String!
+    phone: String         # ✅ nuevo
+    whatsapp: String      # ✅ nuevo
   }
 
   input FacturaInput {
@@ -48,7 +52,12 @@ module.exports = gql`
     items: [ProductoInput!]!
   }
 
-  type Mutation {
+    type Mutation {
     emitirFactura(input: FacturaInput!): Factura
+    deleteFactura(id: ID!): Boolean
+    getAllFacturas: [Factura]
+    getFacturaById(id: ID!): Factura
+    updateFactura(id: ID!, input: FacturaInput!): Factura
   }
 `;
+
